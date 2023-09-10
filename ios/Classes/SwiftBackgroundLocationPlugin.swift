@@ -32,9 +32,22 @@ public class SwiftBackgroundLocationPlugin: NSObject, FlutterPlugin, CLLocationM
             
             let args = call.arguments as? Dictionary<String, Any>
             let distanceFilter = args?["distance_filter"] as? Double
+            let activityType = args?["activity_type"] as? String
             SwiftBackgroundLocationPlugin.locationManager?.distanceFilter = distanceFilter ?? 0
-            
-            SwiftBackgroundLocationPlugin.locationManager?.startUpdatingLocation() 
+            var mappedAcitvityType = CLActivityType.other
+            if(activityType == "fitness"){
+                mappedAcitvityType = CLActivityType.fitness
+            }
+            else if(activityType == "automotiveNavigation"){
+                mappedAcitvityType = CLActivityType.automotiveNavigation
+            }
+            else if(activityType == "airborne"){
+                if #available(iOS 12.0, *){
+                    mappedAcitvityType = CLActivityType.airborne
+                }
+            }
+            SwiftBackgroundLocationPlugin.locationManager?.activityType = mappedAcitvityType
+            SwiftBackgroundLocationPlugin.locationManager?.startUpdatingLocation()
         } else if (call.method == "stop_location_service") {
             SwiftBackgroundLocationPlugin.channel?.invokeMethod("location", arguments: "stop_location_service")
             SwiftBackgroundLocationPlugin.locationManager?.stopUpdatingLocation()

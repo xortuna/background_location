@@ -48,6 +48,7 @@ class _MyAppState extends State<MyApp> {
                     );
                     //await BackgroundLocation.setAndroidConfiguration(1000);
                     await BackgroundLocation.startLocationService(
+                        activityType: BackgroundLocation.activity_type_fitness,
                         distanceFilter: 20);
                     BackgroundLocation.getLocationUpdates((location) {
                       setState(() {

@@ -12,15 +12,27 @@ class BackgroundLocation {
   static const MethodChannel _channel =
       MethodChannel('com.almoullim.background_location/methods');
 
+  static const String activity_type_fitness = "fitness";
+  static const String activity_type_airborne = "airborne";
+  static const String activity_type_automotiveNavigation =
+      "automotiveNavigation";
+
   /// Stop receiving location updates
   static stopLocationService() async {
     return await _channel.invokeMethod('stop_location_service');
   }
 
   /// Start receiving location updated
-  static startLocationService({double distanceFilter = 0.0, bool forceAndroidLocationManager = false}) async {
-    return await _channel.invokeMethod('start_location_service',
-        <String, dynamic>{'distance_filter': distanceFilter, 'force_location_manager': forceAndroidLocationManager});
+  static startLocationService(
+      {String activityType = "other",
+      double distanceFilter = 0.0,
+      bool forceAndroidLocationManager = false}) async {
+    return await _channel
+        .invokeMethod('start_location_service', <String, dynamic>{
+      'activity_type': activityType,
+      'distance_filter': distanceFilter,
+      'force_location_manager': forceAndroidLocationManager
+    });
   }
 
   static setAndroidNotification(
@@ -61,8 +73,6 @@ class BackgroundLocation {
 
     return completer.future;
   }
-
-
 
   /// Register a function to recive location updates as long as the location
   /// service has started
