@@ -28,7 +28,9 @@ class _MyAppState extends State<MyApp> {
 
   Future<File> get _localFile async {
     final path = await _localPath;
-    return File('$path/gis.txt');
+
+    return File(
+        '$path/gis_${DateTime.now().month}_${DateTime.now().day}_${DateTime.now().hour}_${DateTime.now().minute}.txt');
   }
 
   @override
