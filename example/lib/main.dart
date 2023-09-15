@@ -1,5 +1,7 @@
 import 'package:background_location/background_location.dart';
 import 'package:flutter/material.dart';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 
 void main() => runApp(MyApp());
 
@@ -16,10 +18,26 @@ class _MyAppState extends State<MyApp> {
   String bearing = 'waiting...';
   String speed = 'waiting...';
   String time = 'waiting...';
+  File? file;
+
+  Future<String> get _localPath async {
+    final directory = await getApplicationDocumentsDirectory();
+
+    return directory.path;
+  }
+
+  Future<File> get _localFile async {
+    final path = await _localPath;
+    return File('$path/gis.txt');
+  }
 
   @override
   void initState() {
     super.initState();
+    _localFile.then((value) {
+      file = value;
+      file?.writeAsString("time,lat,lon,alt,bearomg,acc,speed");
+    });
   }
 
   @override
@@ -48,9 +66,8 @@ class _MyAppState extends State<MyApp> {
                     );
                     //await BackgroundLocation.setAndroidConfiguration(1000);
                     await BackgroundLocation.startLocationService(
-                        activityType: BackgroundLocation.activity_type_fitness,
-                        distanceFilter: 20);
-                    BackgroundLocation.getLocationUpdates((location) {
+                        activityType: BackgroundLocation.activity_type_fitness, distanceFilter: 20);
+                    BackgroundLocation.getLocationUpdates((location) async {
                       setState(() {
                         latitude = location.latitude.toString();
                         longitude = location.longitude.toString();
@@ -58,9 +75,7 @@ class _MyAppState extends State<MyApp> {
                         altitude = location.altitude.toString();
                         bearing = location.bearing.toString();
                         speed = location.speed.toString();
-                        time = DateTime.fromMillisecondsSinceEpoch(
-                                location.time!.toInt())
-                            .toString();
+                        time = DateTime.fromMillisecondsSinceEpoch(location.time!.toInt()).toString();
                       });
                       print('''\n
                         Latitude:  $latitude
@@ -71,6 +86,8 @@ class _MyAppState extends State<MyApp> {
                         Speed: $speed
                         Time: $time
                       ''');
+                      await file?.writeAsString("$time,$latitude,$longitude,$altitude,$bearing,$accuracy,$speed",
+                          mode: FileMode.append);
                     });
                   },
                   child: Text('Start Location Service')),
