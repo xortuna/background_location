@@ -36,7 +36,7 @@ class _MyAppState extends State<MyApp> {
     super.initState();
     _localFile.then((value) {
       file = value;
-      file?.writeAsString("time,lat,lon,alt,bearomg,acc,speed");
+      file?.writeAsString("time,lat,lon,alt,bearomg,acc,speed\n");
     });
   }
 
@@ -66,7 +66,7 @@ class _MyAppState extends State<MyApp> {
                     );
                     //await BackgroundLocation.setAndroidConfiguration(1000);
                     await BackgroundLocation.startLocationService(
-                        activityType: BackgroundLocation.activity_type_fitness, distanceFilter: 20);
+                        activityType: BackgroundLocation.activity_type_fitness);
                     BackgroundLocation.getLocationUpdates((location) async {
                       setState(() {
                         latitude = location.latitude.toString();
@@ -75,7 +75,9 @@ class _MyAppState extends State<MyApp> {
                         altitude = location.altitude.toString();
                         bearing = location.bearing.toString();
                         speed = location.speed.toString();
-                        time = DateTime.fromMillisecondsSinceEpoch(location.time!.toInt()).toString();
+                        time = DateTime.fromMillisecondsSinceEpoch(
+                                location.time!.toInt())
+                            .toString();
                       });
                       print('''\n
                         Latitude:  $latitude
@@ -86,7 +88,8 @@ class _MyAppState extends State<MyApp> {
                         Speed: $speed
                         Time: $time
                       ''');
-                      await file?.writeAsString("$time,$latitude,$longitude,$altitude,$bearing,$accuracy,$speed",
+                      await file?.writeAsString(
+                          "$time,$latitude,$longitude,$altitude,$bearing,$accuracy,$speed\n",
                           mode: FileMode.append);
                     });
                   },
