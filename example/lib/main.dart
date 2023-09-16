@@ -18,6 +18,7 @@ class _MyAppState extends State<MyApp> {
   String bearing = 'waiting...';
   String speed = 'waiting...';
   String time = 'waiting...';
+  bool _onLift = false;
   File? file;
 
   Future<String> get _localPath async {
@@ -38,7 +39,7 @@ class _MyAppState extends State<MyApp> {
     super.initState();
     _localFile.then((value) {
       file = value;
-      file?.writeAsString("time,lat,lon,alt,bearomg,acc,speed\n");
+      file?.writeAsString("time,lat,lon,alt,bear,acc,speed,lift\n");
     });
   }
 
@@ -91,7 +92,7 @@ class _MyAppState extends State<MyApp> {
                         Time: $time
                       ''');
                       await file?.writeAsString(
-                          "$time,$latitude,$longitude,$altitude,$bearing,$accuracy,$speed\n",
+                          "$time,$latitude,$longitude,$altitude,$bearing,$accuracy,$speed,$_onLift\n",
                           mode: FileMode.append);
                     });
                   },
@@ -101,11 +102,20 @@ class _MyAppState extends State<MyApp> {
                     BackgroundLocation.stopLocationService();
                   },
                   child: Text('Stop Location Service')),
-              ElevatedButton(
-                  onPressed: () {
-                    getCurrentLocation();
-                  },
-                  child: Text('Get Current Location')),
+              ToggleButtons(
+                children: [
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 12),
+                    child: Text("Lift"),
+                  )
+                ],
+                isSelected: [_onLift],
+                onPressed: (index) {
+                  setState(() {
+                    _onLift = !_onLift;
+                  });
+                },
+              )
             ],
           ),
         ),
