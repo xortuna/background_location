@@ -18,11 +18,23 @@ import com.google.android.gms.common.*
 class LocationUpdatesService : Service() {
 
     private var forceLocationManager: Boolean = false
-
+    private var mContext:Context? = null
     override fun onBind(intent: Intent?): IBinder {
         val distanceFilter = intent?.getDoubleExtra("distance_filter", 0.0)
         if (intent != null) {
             forceLocationManager = intent.getBooleanExtra("force_location_manager", false)
+            //We've started the wrong client, fix that here
+            if(forceLocationManager && mFusedLocationClient != null){
+                mFusedLocationClient?.removeLocationUpdates(mFusedLocationCallback!!)
+                mFusedLocationClient = null;
+                mFusedLocationCallback = null;
+                println("Manager respawned due to forceLocationManager");
+                mLocationManager = applicationContext.getSystemService(LOCATION_SERVICE) as LocationManager?
+                mLocationManagerCallback = LocationListener { location ->
+                    println(location.toString())
+                    onNewLocation(location)
+                }
+            }
         }
         if (distanceFilter != null) {
             createLocationRequest(distanceFilter)
@@ -97,12 +109,22 @@ class LocationUpdatesService : Service() {
 
     private var mServiceHandler: Handler? = null
 
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent != null) {
+            forceLocationManager = intent.getBooleanExtra("force_location_manager", false)
+        }
+
+        return super.onStartCommand(intent, flags, startId)
+    }
     override fun onCreate() {
+        super.onCreate()
+
         val googleAPIAvailability = GoogleApiAvailability.getInstance()
             .isGooglePlayServicesAvailable(applicationContext)
         
         isGoogleApiAvailable = googleAPIAvailability == ConnectionResult.SUCCESS
-        
+
+        println("Checked availability")
 
         if (isGoogleApiAvailable && !this.forceLocationManager) {
             mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
@@ -119,8 +141,7 @@ class LocationUpdatesService : Service() {
                 }
             }
         } else {
-            mLocationManager = getSystemService(LOCATION_SERVICE) as LocationManager?
-
+            mLocationManager = applicationContext.getSystemService(LOCATION_SERVICE) as LocationManager?
             mLocationManagerCallback = LocationListener { location ->
                 println(location.toString())
                 onNewLocation(location)

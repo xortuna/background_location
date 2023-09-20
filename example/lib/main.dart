@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:background_location/background_location.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
+import 'package:flutter_barometer/flutter_barometer.dart';
 
 void main() => runApp(MyApp());
 
@@ -19,12 +22,18 @@ class _MyAppState extends State<MyApp> {
   String speed = 'waiting...';
   String time = 'waiting...';
   bool _onLift = false;
+  bool _useClassicGps = false;
   File? file;
+  List<StreamSubscription<dynamic>> _streamSubscriptions = <StreamSubscription<dynamic>>[];
+
+  double currentPressure = 0.0;
 
   Future<String> get _localPath async {
-    final directory = await getApplicationDocumentsDirectory();
-
-    return directory.path;
+    String directory = '/storage/emulated/0/Documents/';
+    if (Platform.isIOS) {
+      directory = (await getApplicationDocumentsDirectory()).path;
+    }
+    return directory;
   }
 
   Future<File> get _localFile async {
@@ -39,7 +48,7 @@ class _MyAppState extends State<MyApp> {
     super.initState();
     _localFile.then((value) {
       file = value;
-      file?.writeAsString("time,lat,lon,alt,bear,acc,speed,lift\n");
+      file?.writeAsString("time,lat,lon,alt,bear,acc,speed,lift,barometer\n");
     });
   }
 
@@ -60,6 +69,7 @@ class _MyAppState extends State<MyApp> {
               locationData('Bearing: ' + bearing),
               locationData('Speed: ' + speed),
               locationData('Time: ' + time),
+              locationData('Pressure:' + currentPressure.toString()),
               ElevatedButton(
                   onPressed: () async {
                     await BackgroundLocation.setAndroidNotification(
@@ -69,7 +79,13 @@ class _MyAppState extends State<MyApp> {
                     );
                     //await BackgroundLocation.setAndroidConfiguration(1000);
                     await BackgroundLocation.startLocationService(
+                        forceAndroidLocationManager: _useClassicGps,
                         activityType: BackgroundLocation.activity_type_fitness);
+
+                    _streamSubscriptions.add(flutterBarometerEvents.listen((event) {
+                      currentPressure = event.pressure;
+                    }));
+
                     BackgroundLocation.getLocationUpdates((location) async {
                       setState(() {
                         latitude = location.latitude.toString();
@@ -78,9 +94,7 @@ class _MyAppState extends State<MyApp> {
                         altitude = location.altitude.toString();
                         bearing = location.bearing.toString();
                         speed = location.speed.toString();
-                        time = DateTime.fromMillisecondsSinceEpoch(
-                                location.time!.toInt())
-                            .toString();
+                        time = DateTime.fromMillisecondsSinceEpoch(location.time!.toInt()).toString();
                       });
                       print('''\n
                         Latitude:  $latitude
@@ -92,7 +106,7 @@ class _MyAppState extends State<MyApp> {
                         Time: $time
                       ''');
                       await file?.writeAsString(
-                          "$time,$latitude,$longitude,$altitude,$bearing,$accuracy,$speed,$_onLift\n",
+                          "$time,$latitude,$longitude,$altitude,$bearing,$accuracy,$speed,$_onLift,$currentPressure\n",
                           mode: FileMode.append);
                     });
                   },
@@ -100,6 +114,9 @@ class _MyAppState extends State<MyApp> {
               ElevatedButton(
                   onPressed: () {
                     BackgroundLocation.stopLocationService();
+                    for (StreamSubscription<dynamic> subscription in _streamSubscriptions) {
+                      subscription.cancel();
+                    }
                   },
                   child: Text('Stop Location Service')),
               ToggleButtons(
@@ -107,12 +124,17 @@ class _MyAppState extends State<MyApp> {
                   Padding(
                     padding: EdgeInsets.symmetric(horizontal: 12),
                     child: Text("Lift"),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 12),
+                    child: Text("Classic GPS"),
                   )
                 ],
-                isSelected: [_onLift],
+                isSelected: [_onLift, _useClassicGps],
                 onPressed: (index) {
                   setState(() {
-                    _onLift = !_onLift;
+                    if (index == 0) _onLift = !_onLift;
+                    if (index == 1) _useClassicGps = !_useClassicGps;
                   });
                 },
               )
